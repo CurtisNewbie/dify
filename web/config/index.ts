@@ -162,7 +162,8 @@ export const ANNOTATION_DEFAULT = {
   score_threshold: 0.9,
 }
 
-export const MAX_TOOLS_NUM = 10
+// yongj.zhuang: maxx number of tools an Agent can use, was 10, now changed to 999999
+export const MAX_TOOLS_NUM = 999999
 
 export const DEFAULT_AGENT_SETTING = {
   enabled: false,
