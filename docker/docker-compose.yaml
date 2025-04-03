@@ -472,6 +472,7 @@ services:
   # Frontend web application.
   web:
     image: langgenius/dify-web:1.0.1
+    build: ../web # yongjie: add build, to make sure the code we modified works
     restart: always
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
