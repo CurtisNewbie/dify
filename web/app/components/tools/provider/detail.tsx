@@ -347,7 +347,7 @@ const ProviderDetail = ({
             </div>
           )}
           {!isDetailLoading && (
-            <div className='mt-1 py-2'>
+            <div className='mt-1 py-2' style={{overflow: 'scroll', height: '600px'}}>
               {collection.type !== CollectionType.workflow && toolList.map(tool => (
                 <ToolItem
                   key={tool.name}
