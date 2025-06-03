@@ -7,7 +7,7 @@ cp docker-compose.yaml "$bak_file"
 echo "backup docker-compose.yaml to '${bak_file}'"
 
 echo "syncing latest source code"
-git fetch && git merge main
+git fetch && git merge
 echo "synced latest source code"
 
 echo "stopping dify docker-compose service"
