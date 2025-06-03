@@ -10,7 +10,7 @@ from yarl import URL
 
 import contexts
 from core.plugin.entities.plugin import ToolProviderID
-from core.plugin.manager.tool import PluginToolManager
+from core.plugin.impl.tool import PluginToolManager
 from core.tools.__base.tool_provider import ToolProviderController
 from core.tools.__base.tool_runtime import ToolRuntime
 from core.tools.plugin_tool.provider import PluginToolProviderController
@@ -161,8 +161,11 @@ class ToolManager:
         get the tool runtime
 
         :param provider_type: the type of the provider
-        :param provider_name: the name of the provider
+        :param provider_id: the id of the provider
         :param tool_name: the name of the tool
+        :param tenant_id: the tenant id
+        :param invoke_from: invoke from
+        :param tool_invoke_from: the tool invoke from
 
         :return: the tool
         """
@@ -427,8 +430,6 @@ class ToolManager:
         get the absolute path of the icon of the hardcoded provider
 
         :param provider: the name of the provider
-        :param tenant_id: the id of the tenant
-
         :return: the absolute path of the icon, the mime type of the icon
         """
         # get provider
@@ -527,7 +528,7 @@ class ToolManager:
                     yield provider
 
                 except Exception:
-                    logger.exception(f"load builtin provider {provider}")
+                    logger.exception(f"load builtin provider {provider_path}")
                     continue
         # set builtin providers loaded
         cls._builtin_providers_loaded = True
@@ -643,10 +644,10 @@ class ToolManager:
                 )
 
                 workflow_provider_controllers: list[WorkflowToolProviderController] = []
-                for provider in workflow_providers:
+                for workflow_provider in workflow_providers:
                     try:
                         workflow_provider_controllers.append(
-                            ToolTransformService.workflow_provider_to_controller(db_provider=provider)
+                            ToolTransformService.workflow_provider_to_controller(db_provider=workflow_provider)
                         )
                     except Exception:
                         # app has been deleted
@@ -672,7 +673,8 @@ class ToolManager:
         """
         get the api provider
 
-        :param provider_name: the name of the provider
+        :param tenant_id: the id of the tenant
+        :param provider_id: the id of the provider
 
         :return: the provider controller, the credentials
         """

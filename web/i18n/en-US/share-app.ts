@@ -6,6 +6,7 @@ const translation = {
   },
   chat: {
     newChat: 'Start New chat',
+    newChatTip: 'Already in a new chat',
     chatSettingsTitle: 'New chat setup',
     chatFormTip: 'Chat settings cannot be modified after the chat has started.',
     pinnedTitle: 'Pinned',
@@ -33,6 +34,8 @@ const translation = {
     },
     tryToSolve: 'Try to solve',
     temporarySystemIssue: 'Sorry, temporary system issue.',
+    expand: 'Expand',
+    collapse: 'Collapse',
   },
   generation: {
     tabs: {

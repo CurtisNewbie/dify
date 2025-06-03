@@ -9,10 +9,13 @@ import type {
   Dependency,
   GitHubItemAndMarketPlaceDependency,
   InstallPackageResponse,
+  InstalledLatestVersionResponse,
   InstalledPluginListResponse,
+  InstalledPluginListWithTotalResponse,
   PackageDependency,
   Permissions,
   Plugin,
+  PluginDeclaration,
   PluginDetail,
   PluginInfoFromMarketPlace,
   PluginTask,
@@ -31,6 +34,7 @@ import type {
 import { get, getMarketplace, post, postMarketplace } from './base'
 import type { MutateOptions, QueryOptions } from '@tanstack/react-query'
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -72,6 +76,66 @@ export const useInstalledPluginList = (disable?: boolean) => {
   })
 }
 
+export const useInstalledPluginListWithPagination = (pageSize = 100) => {
+  const fetchPlugins = async ({ pageParam = 1 }) => {
+    const response = await get<InstalledPluginListWithTotalResponse>(
+      `/workspaces/current/plugin/list?page=${pageParam}&page_size=${pageSize}`,
+    )
+    return response
+  }
+
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: ['installed-plugins', pageSize],
+    queryFn: fetchPlugins,
+    getNextPageParam: (lastPage, pages) => {
+      const totalItems = lastPage.total
+      const currentPage = pages.length
+      const itemsLoaded = currentPage * pageSize
+
+      if (itemsLoaded >= totalItems)
+        return
+
+      return currentPage + 1
+    },
+    initialPageParam: 1,
+  })
+
+  const plugins = data?.pages.flatMap(page => page.plugins) ?? []
+
+  return {
+    data: {
+      plugins,
+    },
+    isLastPage: !hasNextPage,
+    loadNextPage: () => {
+      fetchNextPage()
+    },
+    isLoading,
+    isFetching: isFetchingNextPage,
+    error,
+  }
+}
+
+export const useInstalledLatestVersion = (pluginIds: string[]) => {
+  return useQuery<InstalledLatestVersionResponse>({
+    queryKey: [NAME_SPACE, 'installedLatestVersion', pluginIds],
+    queryFn: () => post<InstalledLatestVersionResponse>('/workspaces/current/plugin/list/latest-versions', {
+      body: {
+        plugin_ids: pluginIds,
+      },
+    }),
+    enabled: !!pluginIds.length,
+    initialData: pluginIds.length ? undefined : { versions: {} },
+  })
+}
+
 export const useInvalidateInstalledPluginList = () => {
   const queryClient = useQueryClient()
   const invalidateAllBuiltInTools = useInvalidateAllBuiltInTools()
@@ -101,6 +165,14 @@ export const useUpdatePackageFromMarketPlace = (options?: MutateOptions<InstallP
         body,
       })
     },
+  })
+}
+
+export const usePluginDeclarationFromMarketPlace = (pluginUniqueIdentifier: string) => {
+  return useQuery({
+    queryKey: [NAME_SPACE, 'pluginDeclaration', pluginUniqueIdentifier],
+    queryFn: () => get<{ manifest: PluginDeclaration }>('/workspaces/current/plugin/marketplace/pkg', { params: { plugin_unique_identifier: pluginUniqueIdentifier } }),
+    enabled: !!pluginUniqueIdentifier,
   })
 }
 
@@ -187,7 +259,8 @@ export const useInstallOrUpdate = ({
           if (item.type === 'github') {
             const data = item as GitHubItemAndMarketPlaceDependency
             // From local bundle don't have data.value.github_plugin_unique_identifier
-            if (!data.value.github_plugin_unique_identifier) {
+            uniqueIdentifier = data.value.github_plugin_unique_identifier!
+            if (!uniqueIdentifier) {
               const { unique_identifier } = await post<uploadGitHubResponse>('/workspaces/current/plugin/upload/github', {
                 body: {
                   repo: data.value.repo!,
@@ -476,7 +549,7 @@ export const useModelInList = (currentProvider?: ModelProvider, modelId?: string
         const modelsData = await fetchModelProviderModelList(`/workspaces/current/model-providers/${currentProvider?.provider}/models`)
         return !!modelId && !!modelsData.data.find(item => item.model === modelId)
       }
-      catch (error) {
+      catch {
         return false
       }
     },
@@ -496,7 +569,7 @@ export const usePluginInfo = (providerName?: string) => {
         const response = await fetchPluginInfoFromMarketPlace({ org, name })
         return response.data.plugin.category === PluginTypeEnum.model ? response.data.plugin : null
       }
-      catch (error) {
+      catch {
         return null
       }
     },
